@@ -1,6 +1,6 @@
 # Patches for Qt must be at the very least submitted to Qt's Gerrit codereview
 # rather than their bug-report Jira. The latter is rarely reviewed by Qt.
-class Qt < Formula
+class QtAT511 < Formula
   desc "Cross-platform application and UI framework"
   homepage "https://www.qt.io/"
   url "https://download.qt.io/official_releases/qt/5.11/5.11.2/single/qt-everywhere-src-5.11.2.tar.xz"
@@ -9,7 +9,26 @@ class Qt < Formula
   sha256 "c6104b840b6caee596fa9a35bc5f57f67ed5a99d6a36497b6fe66f990a53ca81"
   head "https://code.qt.io/qt/qt5.git", :branch => "5.11", :shallow => false
 
+  # override bottle URL
+  def bottle(*args, &block)
+    b = super *args, &block
+    b.resource.url(b.url.sub(/qt%405.11/, 'qt'))
+    b
+  end
+
+  # move extracted bottle to appropriate location
+  def prefix(v = pkg_version)
+    orig_prefix = super v
+    cache_prefix = orig_prefix.sub(/qt@5.11/, 'qt')
+    if Dir.exists?(cache_prefix) && cache_prefix.to_s.include?(HOMEBREW_CELLAR.realpath.to_s)
+      system "mkdir -p #{orig_prefix.parent}"
+      system "mv #{cache_prefix} #{orig_prefix.parent}/"
+    end
+    orig_prefix
+  end
+
   bottle do
+    root_url "https://homebrew.bintray.com/bottles"
     sha256 "8c77b5762267b127cc31346ac4da805bbfd59e0180d90e1e8b77fb463e929d60" => :mojave
     sha256 "096d8894b25b0fdec9b77150704491993872a7848397a04870627534fb95c9e3" => :high_sierra
     sha256 "0464be51d0eb0a45de4a1d1c6200e1d9768eec5e9737050755497a4f4de66a08" => :sierra
