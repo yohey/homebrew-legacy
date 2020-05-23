@@ -1,6 +1,6 @@
 # Patches for Qt must be at the very least submitted to Qt's Gerrit codereview
 # rather than their bug-report Jira. The latter is rarely reviewed by Qt.
-class QtAT511 < Formula
+class Qt511 < Formula
   desc "Cross-platform application and UI framework"
   homepage "https://www.qt.io/"
   url "https://download.qt.io/official_releases/qt/5.11/5.11.2/single/qt-everywhere-src-5.11.2.tar.xz"
@@ -9,31 +9,6 @@ class QtAT511 < Formula
   sha256 "c6104b840b6caee596fa9a35bc5f57f67ed5a99d6a36497b6fe66f990a53ca81"
   head "https://code.qt.io/qt/qt5.git", :branch => "5.11", :shallow => false
 
-  # override bottle URL
-  def bottle(*args, &block)
-    b = super *args, &block
-    b.resource.url(b.url.sub(/qt%405.11/, 'qt'))
-    b
-  end
-
-  # move extracted bottle to appropriate location
-  def prefix(v = pkg_version)
-    orig_prefix = super v
-    cache_prefix = orig_prefix.sub(/qt@5.11/, 'qt')
-    if Dir.exists?(cache_prefix) && cache_prefix.to_s.include?(HOMEBREW_CELLAR.realpath.to_s)
-      system "mkdir -p #{orig_prefix.parent}"
-      system "mv #{cache_prefix} #{orig_prefix.parent}/"
-    end
-    orig_prefix
-  end
-
-  bottle do
-    root_url "https://homebrew.bintray.com/bottles"
-    sha256 "8c77b5762267b127cc31346ac4da805bbfd59e0180d90e1e8b77fb463e929d60" => :mojave
-    sha256 "096d8894b25b0fdec9b77150704491993872a7848397a04870627534fb95c9e3" => :high_sierra
-    sha256 "0464be51d0eb0a45de4a1d1c6200e1d9768eec5e9737050755497a4f4de66a08" => :sierra
-    sha256 "22e9abc0b47541bb03b2da7f6a19c5d7640ea2314322564551adc3d22305806e" => :el_capitan
-  end
 
   keg_only "Qt 5 has CMake issues when linked"
 
@@ -64,6 +39,12 @@ class QtAT511 < Formula
   patch do
     url "https://raw.githubusercontent.com/Homebrew/formula-patches/962f0f/qt/xcode10.diff"
     sha256 "c064398411c69f2e1c516c0cd49fcd0755bc29bb19e65c5694c6d726c43389a6"
+  end
+
+  # Additional patch for Catalina
+  patch do
+    url "https://raw.githubusercontent.com/yohey/homebrew-legacy/d5ae1e/patches/qt_5.11-5.11.2.patch"
+    sha256 "1c83ad91c161c1c6938c6bf55e27b4fa7636b8c512ecfc8ab9e30d9464a66662"
   end
 
   def install
