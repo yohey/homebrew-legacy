@@ -5,37 +5,29 @@ class Pyside2 < Formula
   version "5.11.2"
   head "http://code.qt.io/cgit/pyside/pyside-setup.git", :branch => "5.11"
 
-  bottle do
-    root_url "https://dl.bintray.com/freecad/bottles-freecad"
-    sha256 "e2492069174be9f63bfc39b419b21d47065fbd7210dba3ee147754be95afbd4a" => :high_sierra
-    sha256 "209516b69f2b9dfe5d2f29da53751379ebd9e2ada7257f6b8b141ed966c4c710" => :sierra
-    sha256 "939ba3ecc9a3a683dfbf7c83186fa4696440f384d1c32fc945e86af5b62b4015" => :el_capitan
-  end
 
   option "without-python", "Build without python 2 support"
-  depends_on "python@2" => :recommended
-  depends_on "python3" => :optional
+  depends_on "python@3.8"
 
   option "without-docs", "Skip building documentation"
 
   depends_on "cmake" => :build
+  depends_on "llvm"
   depends_on "sphinx-doc" => :build if build.with? "docs"
-  depends_on "qt"
+  depends_on "yohey/legacy/qt_5.11"
 
-  if build.with? "python3"
-    depends_on "FreeCAD/freecad/shiboken2" => "with-python3"
-  else
-    depends_on "FreeCAD/freecad/shiboken2"
-  end
+  depends_on "yohey/legacy/shiboken2"
 
   def install
     ENV.cxx11
 
     # This is a workaround for current problems with Shiboken2
-    ENV["HOMEBREW_INCLUDE_PATHS"] = ENV["HOMEBREW_INCLUDE_PATHS"].sub(Formula["qt"].include, "")
+    ENV["HOMEBREW_INCLUDE_PATHS"] = ENV["HOMEBREW_INCLUDE_PATHS"].sub(Formula["yohey/legacy/qt_5.11"].include, "")
 
     rm buildpath/"sources/pyside2/doc/CMakeLists.txt" if build.without? "docs"
-    qt = Formula["qt"]
+    qt = Formula["yohey/legacy/qt_5.11"]
+
+    llvm = Formula["llvm"]
 
     # Add out of tree build because one of its deps, shiboken, itself needs an
     # out of tree build in shiboken.rb.
@@ -47,6 +39,8 @@ class Pyside2 < Formula
       mkdir "macbuild#{version}" do
 
         args = std_cmake_args + %W[
+          -DCMAKE_C_COMPILER=#{llvm.opt_prefix}/bin/clang
+          -DCMAKE_CXX_COMPILER=#{llvm.opt_prefix}/bin/clang++
           -DPYTHON_EXECUTABLE=#{pyhome}/bin/python#{version}
           -DPYTHON_LIBRARY=#{py_library}
           -DPYTHON_INCLUDE_DIR=#{py_include}
