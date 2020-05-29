@@ -7,24 +7,54 @@ class Qtwebkit < Formula
   version "5.212-72cfbd"
   revision 3
 
-  bottle do
-    root_url "https://dl.bintray.com/freecad/bottles-freecad"
-    cellar :any
-    sha256 "dc170b2ab3b109dc6e9fe8c923387c6d4e293f856104c3a3f0f8bf4b73dfc658" => :high_sierra
-    sha256 "038de58c8da8225178e3f34961b34caca1e09eed91659f7652d8e00db03dfd81" => :sierra
-    sha256 "8a88836b859f1d739d2d5942732c7adc63822989a91384dd4966eb14b6abc9c4" => :el_capitan
-  end
 
-  depends_on "qt"
+  depends_on "yohey/legacy/qt_5.11"
   depends_on "jpeg"
   depends_on "libpng"
   depends_on "cmake" => :build
   depends_on "ninja" => :build
-  
+
   keg_only "Qt itself is keg only which implies the same for Qt modules"
-  
+
+  # patch for multiple math.h
+  patch :DATA
+
   def install
     system "./Tools/Scripts/build-webkit", "--qt", "--prefix=#{prefix}", "--install"
   end
 end
 
+__END__
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 432ae6fce..f7bef468b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -136,6 +136,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+ #------------------------------------------------------------------------------
+ include(WebKitCommon)
+ 
++# patch for multiple math.h
++unset(CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES)
++include_directories(BEFORE SYSTEM "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1")
++
+ # -----------------------------------------------------------------------------
+ # Enable API unit tests and create a target for the test runner
+ # -----------------------------------------------------------------------------
+diff --git a/Tools/Scripts/webkitdirs.pm b/Tools/Scripts/webkitdirs.pm
+index 45b6649a9..81d3ed312 100755
+--- a/Tools/Scripts/webkitdirs.pm
++++ b/Tools/Scripts/webkitdirs.pm
+@@ -2152,8 +2152,13 @@ sub buildCMakeProjectOrExit($$$@)
+ 
+ sub installCMakeProjectOrExit
+ {
++    my $config = configuration();
++    my $buildPath = File::Spec->catdir(baseProductDir(), $config);
++    my $originalWorkingDirectory = getcwd();
++    chdir($buildPath) or die;
+     my $returnCode = exitStatus(system(qw(cmake -P cmake_install.cmake)));
+     exit($returnCode) if $returnCode;
++    chdir($originalWorkingDirectory);
+     return 0;
+ }
+ 
