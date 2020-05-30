@@ -17,7 +17,7 @@ class NoExternalPyCXXPackage < Requirement
   fatal false
 
   satisfy do
-    !quiet_system "python", "-c", "import CXX"
+    !quiet_system "python3", "-c", "import CXX"
   end
 
   def message; <<-EOS
@@ -32,33 +32,22 @@ class NoExternalPyCXXPackage < Requirement
   end
 end
 
-class Matplotlib < Formula
+class MatplotlibAT21 < Formula
   desc "Python 2D plotting library"
   homepage "https://matplotlib.org"
   url "https://files.pythonhosted.org/packages/50/27/57ab73d1b094540dec1a01d2207613248d8106f3c3f40e8d86f02eb8d18b/matplotlib-2.1.1.tar.gz"
   sha256 "659f5e1aa0e0f01488c61eff47560c43b8be511c6a29293d7f3896ae17bd8b23"
   head "https://github.com/matplotlib/matplotlib.git"
 
-  bottle do
-    root_url "https://dl.bintray.com/freecad/bottles-freecad"
-    cellar :any
-    sha256 "90c79d71e4d5720bc6c6f82b7675a0cdca49e419ca2c7c216acb1efabcfee051" => :high_sierra
-    sha256 "30446df7e53afa7d2f9968fe28db0da43dc4c17cebdef9d1e433290ae3dfaa1c" => :sierra
-    sha256 "e8257b66075bdd7b698be6306e0041a7cdaa10d3a627e0009d52d677cb56c9b9" => :el_capitan
-  end
 
   option "without-python", "Build without python2 support"
   option "with-cairo", "Build with cairo backend support"
-  option "with-pygtk", "Build with pygtk backend support (python2 only)"
   option "with-tex", "Build with tex support"
 
-  depends_on "python@2" => :recommended
-  depends_on "python3" => :optional
+  depends_on "python@3.8"
 
-  requires_py2 = []
-  requires_py2 << "with-python" if build.with? "python@2"
   requires_py3 = []
-  requires_py3 << "with-python3" if build.with? "python3"
+  requires_py3 << "with-python@3.8"
 
   deprecated_option "with-gtk3" => "with-gtk+3"
 
@@ -72,17 +61,12 @@ class Matplotlib < Formula
   depends_on "tcl-tk" => :optional
 
   if build.with? "cairo"
-    depends_on "py2cairo" if build.with? "python@2"
     depends_on "py3cairo" if build.with? "python3"
   end
 
   depends_on "gtk+3" => :optional
   depends_on "pygobject3" => requires_py3 if build.with? "gtk+3"
 
-  depends_on "pygtk" => :optional
-  depends_on "pygobject" if build.with? "pygtk"
-
-  depends_on "pyqt" => [:optional] + requires_py2
 
   depends_on DvipngRequirement if build.with? "tex"
 
@@ -118,17 +102,6 @@ class Matplotlib < Formula
     sha256 "70e8a77beed4562e7f14fe23a786b54f6296e34344c23bc42f07b15018ff98e9"
   end
 
-  # python2 only
-  resource "backports.functools_lru_cache" do
-    url "https://files.pythonhosted.org/packages/4e/91/0e93d9455254b7b630fb3ebe30cc57cab518660c5fad6a08aac7908a4431/backports.functools_lru_cache-1.4.tar.gz"
-    sha256 "31f235852f88edc1558d428d890663c49eb4514ffec9f3650e7f3c9e4a12e36f"
-  end
-
-  # python2 only
-  resource "subprocess32" do
-    url "https://pypi.python.org/packages/28/91/d1283618eba07c4e8e18c58b3fd8b5ff3a8992fb652a3720535ddf2f2916/subprocess32-3.5.0rc1.tar.gz"
-    sha256 "2733defaf2cb24282fdc94cc9f2e0682308d4b20e4b7a6e384580410f314c9af"
-  end
 
   def install
     if MacOS.version == :el_capitan && MacOS::Xcode.installed? && MacOS::Xcode.version >= "8.0" \
@@ -145,11 +118,7 @@ class Matplotlib < Formula
       bundle_path.mkpath
       ENV.prepend_path "PYTHONPATH", bundle_path
 
-      res = if version.to_s.start_with? "2"
-        resources.map(&:name).to_set
-      else
-        resources.map(&:name).to_set - ["backports.functools_lru_cache", "subprocess32"]
-      end
+      res = resources.map(&:name).to_set
       res.each do |r|
         resource(r).stage do
           system python, *Language::Python.setup_install_args(libexec)
@@ -166,23 +135,11 @@ class Matplotlib < Formula
       If you want to use the `wxagg` backend, do `brew install wxpython`.
       This can be done even after the matplotlib install.
     EOS
-    if build.with?("python") && !Formula["python"].installed?
-      homebrew_site_packages = Language::Python.homebrew_site_packages
-      user_site_packages = Language::Python.user_site_packages "python"
-      s += <<-EOS
-        If you use system python (that comes - depending on the OS X version -
-        with older versions of numpy, scipy and matplotlib), you may need to
-        ensure that the brewed packages come earlier in Python's sys.path with:
-          mkdir -p #{user_site_packages}
-          echo 'import sys; sys.path.insert(1, "#{homebrew_site_packages}")' >> #{user_site_packages}/homebrew.pth
-      EOS
-    end
     s
   end
 
   test do
     ENV["PYTHONDONTWRITEBYTECODE"] = "1"
-    ENV.prepend_path "PATH", Formula["python"].opt_libexec/"bin"
 
     Language::Python.each_python(build) do |python, _|
       system python, "-c", "import matplotlib"
