@@ -1,15 +1,10 @@
-class Cgal < Formula
+class CgalAT4 < Formula
   desc "Computational Geometry Algorithm Library"
   homepage "https://www.cgal.org/"
   url "https://github.com/CGAL/cgal/releases/download/releases%2FCGAL-4.14.1/CGAL-4.14.1.tar.xz"
   sha256 "d4ec2528b88a7c3a07b0b86db96c216822f85b951bf4bc7f9d1f26bf6c369afe"
 
-  bottle do
-    cellar :any
-    sha256 "d9b8e3f6b52853ac92f6eaa4023a074dc8ce317ceea9e9be8b98e5a9eb06aa88" => :catalina
-    sha256 "d5899f80357aaf49b2c318813ea6c39fd4c02b354495d9a5f488452808af0ccf" => :mojave
-    sha256 "f7354a832cf0eb5ec2558a288ca21b9e5d4664370597d2a079ec35bce80e7ff7" => :high_sierra
-  end
+  keg_only :versioned_formula
 
   depends_on "cmake" => [:build, :test]
   depends_on "boost"
@@ -21,6 +16,7 @@ class Cgal < Formula
     args = std_cmake_args + %W[
       -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON
       -DCMAKE_INSTALL_NAME_DIR=#{HOMEBREW_PREFIX}/lib
+      -DCMAKE_CXX_FLAGS='-std=c++14'
       -DWITH_Eigen3=ON
       -DWITH_LAPACK=ON
       -DWITH_CGAL_Qt5=OFF
